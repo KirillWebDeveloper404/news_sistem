@@ -1,0 +1,4 @@
+aiogram
+Django
+peewee
+environs
