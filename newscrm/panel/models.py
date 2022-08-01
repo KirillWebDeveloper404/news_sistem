@@ -9,8 +9,8 @@ class User(models.Model):
     subs = models.IntegerField(null=True)
 
     # Данные из админки
-    kids = models.TextField(null=True, unique=False)
-    animals = models.TextField(null=True, unique=False)
+    kids = models.BooleanField(null=True)
+    animals = models.BooleanField(null=True)
     tematika = models.TextField(null=True, unique=False)
 
     # Системные переменные

@@ -10,8 +10,8 @@ class User(BaseModel):
     subs = IntegerField(null=True)
 
     # Данные из админки
-    kids = TextField(null=True, unique=False)
-    animals = TextField(null=True, unique=False)
+    kids = BooleanField(null=True)
+    animals = BooleanField(null=True)
     tematika = TextField(null=True, unique=False)
 
     # Системные переменные
