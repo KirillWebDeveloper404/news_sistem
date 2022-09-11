@@ -1,10 +1,44 @@
-from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from aiogram.dispatcher.storage import FSMContext
 
 from loader import dp, bot
 from states import Post
-from sql import User
+from sql import User, Tema
 from data.config import admin_chat
+
+
+async def show(message: Message, state: FSMContext):
+    data = await state.get_data()
+    tems = Tema.select()
+
+    tema = []
+    for el in tems:
+        tema.append(
+            [KeyboardButton(el.name)]
+        )
+
+    kb = ReplyKeyboardMarkup(keyboard=tema, resize_keyboard=True)
+    await message.answer('Рассылка', reply_markup=kb)
+
+    text = 'Настройте фильтры рассылки \n' \
+                'Для отправки пришлите сообщение с текстом или фото(можно с подписью) \n'
+    text += f'Подписчики: {data["subs_min"]} - {data["subs_max"]}' if data['subs_min'] != 0 or data['subs_max'] != -1 else ''
+    text += f'Тематики: {data["tema"]}'
+
+    await message.answer(
+            text=text,
+            reply_markup=InlineKeyboardMarkup(row_width=2).add(
+                InlineKeyboardButton(text=f'{data["animals"]} Животные', callback_data='animals'),
+                InlineKeyboardButton(text=f'{data["kids"]} Дети', callback_data='kids'),
+                InlineKeyboardButton(text=f'{data["men"]} Муж', callback_data='men'),
+                InlineKeyboardButton(text=f'{data["women"]} Жен', callback_data='women'),
+                InlineKeyboardButton(text='Количество подписчиков', callback_data='subs')
+            ).add(
+                InlineKeyboardButton(text='Готово', callback_data='send')
+            )
+        )
+
+    await Post.push.set()
 
 
 @dp.message_handler(commands=['post'], state='*')
@@ -13,22 +47,15 @@ async def post(message: Message, state: FSMContext):
         data = {
             'animals': '❌',
             'kids': '❌',
+            'men': '✅',
+            'women': '✅',
+            'tema': [],
             'subs_min': 0,
             'subs_max': -1
         }
         await state.set_data(data)
 
-        await message.answer(
-            text='Настройте фильтры рассылки \n' \
-                'Для отправки пришлите сообщение с текстом или фото(можно с подписью)',
-            reply_markup=InlineKeyboardMarkup(row_width=2).add(
-                InlineKeyboardButton(text=f'{data["animals"]} Животные', callback_data='animals'),
-                InlineKeyboardButton(text=f'{data["kids"]} Дети', callback_data='kids'),
-                InlineKeyboardButton(text='Количество подписчиков', callback_data='subs')
-            )
-        )
-
-        await Post.push.set()
+        await show(message, state)
 
 
 @dp.callback_query_handler(text='animals', state='*')
@@ -43,18 +70,7 @@ async def animals(c: CallbackQuery, state: FSMContext):
 
         await state.update_data(data)
 
-        text = 'Настройте фильтры рассылки \n' \
-                'Для отправки пришлите сообщение с текстом или фото(можно с подписью) \n'
-        text += f'Подписчики: {data["subs_min"]} - {data["subs_max"]}' if data['subs_min'] != 0 or data['subs_max'] != -1 else ''
-
-        await c.message.edit_text(
-            text=text,
-            reply_markup=InlineKeyboardMarkup(row_width=2).add(
-                InlineKeyboardButton(text=f'{data["animals"]}Животные', callback_data='animals'),
-                InlineKeyboardButton(text=f'{data["kids"]}Дети', callback_data='kids'),
-                InlineKeyboardButton(text='Количество подписчиков', callback_data='subs')
-            )
-        )
+        await show(c.message, state)
 
 
 @dp.callback_query_handler(text='kids', state='*')
@@ -69,18 +85,7 @@ async def kids(c: CallbackQuery, state: FSMContext):
 
         await state.update_data(data)
 
-        text = 'Настройте фильтры рассылки \n' \
-                'Для отправки пришлите сообщение с текстом или фото(можно с подписью) \n'
-        text += f'Подписчики: {data["subs_min"]} - {data["subs_max"]}' if data['subs_min'] != 0 or data['subs_max'] != -1 else ''
-
-        await c.message.edit_text(
-            text=text,
-            reply_markup=InlineKeyboardMarkup(row_width=2).add(
-                InlineKeyboardButton(text=f'{data["animals"]}Животные', callback_data='animals'),
-                InlineKeyboardButton(text=f'{data["kids"]}Дети', callback_data='kids'),
-                InlineKeyboardButton(text='Количество подписчиков', callback_data='subs')
-            )
-        )
+        await show(c.message, state)
 
 
 @dp.callback_query_handler(text='subs', state='*')
@@ -109,18 +114,7 @@ async def set_subs(message: Message, state: FSMContext):
 
             await state.update_data(data)
 
-            text='Настройте фильтры рассылки \n' \
-                    'Для отправки пришлите сообщение с текстом или фото(можно с подписью) \n'
-            text += f'Подписчики: {data["subs_min"]} - {data["subs_max"]}' if data['subs_min'] != 0 or data['subs_max'] != -1 else ''
-
-            await message.answer(
-                text=text,
-                reply_markup=InlineKeyboardMarkup(row_width=2).add(
-                    InlineKeyboardButton(text=f'{data["animals"]}Животные', callback_data='animals'),
-                    InlineKeyboardButton(text=f'{data["kids"]}Дети', callback_data='kids'),
-                    InlineKeyboardButton(text='Количество подписчиков', callback_data='subs')
-                )
-            )
+            await show(message, state)
 
             await Post.push.set()
 
@@ -129,9 +123,60 @@ async def set_subs(message: Message, state: FSMContext):
             await message.answer('Неверный формат!')
 
 
-@dp.message_handler(content_types=['photo', 'text'], state=Post.push)
+@dp.callback_query_handler(text='men', state='*')
+async def men(c: CallbackQuery, state: FSMContext):
+    if c.message.chat.id == int(admin_chat):
+        data = await state.get_data()
+        
+        if data['men'] == '❌':
+            data['men'] = '✅'
+        elif data['men'] == '✅':
+            data['men'] = '❌'
+
+        await state.update_data(data)
+
+        await show(c.message, state)
+
+
+@dp.callback_query_handler(text='women', state='*')
+async def women(c: CallbackQuery, state: FSMContext):
+    if c.message.chat.id == int(admin_chat):
+        data = await state.get_data()
+        
+        if data['women'] == '❌':
+            data['women'] = '✅'
+        elif data['women'] == '✅':
+            data['women'] = '❌'
+
+        await state.update_data(data)
+
+        await show(c.message, state)
+
+
+@dp.message_handler(state=Post.push)
+async def tema(message: Message, state: FSMContext):
+    data = await state.get_data()
+
+    if message.text in data['tema']:
+        data['tema'].pop(data['tema'].index(message.text))
+    else:
+        data['tema'].append(message.text)
+
+    await state.update_data(data)
+
+    await show(message, state)
+
+
+@dp.callback_query_handler(text='send', state=Post.push)
+async def send(c: CallbackQuery, state: FSMContext):
+    await Post.send.set()
+    await c.message.answer('Пришлите сообщение для рассылки')
+
+
+@dp.message_handler(content_types=['photo', 'text'], state=Post.send)
 async def push(message: Message, state: FSMContext):
     if message.chat.id == int(admin_chat):
+        num = 0
         users = User.select()
         data = await state.get_data()
         data['animals'] = data['animals'] == '✅'
@@ -141,10 +186,31 @@ async def push(message: Message, state: FSMContext):
             data['subs_max'] = 999999999999999999999999999999999999999
         
         for user in users:
+            send = False
             user.kids = user.kids == 'yes'
             user.animals = user.animals == 'yes'
-            print(user.kids, user.animals)
-            if (user.apruve) and (user.animals == data['animals']) and (user.kids == data['kids']) and (user.subs >= data['subs_min']) and (user.subs <= data['subs_max']):
+
+            if data['animals'] == False:
+                user.animals = False
+            if data['kids'] == False:
+                user.kids = False
+
+            if user.sex == 'm' and data['men']:
+                send = True
+            if user.sex == 'w' and data['women']:
+                send = True
+
+            if len(data['tema']) > 0:
+                tem_list = [el.name for el in user.tema]
+                for el in data['tema']:
+                    if el in tem_list:
+                        send = True
+                    else:
+                        send = False
+                        break
+
+            if (user.apruve) and (send) and (user.animals == data['animals']) and (user.kids == data['kids']) and (user.subs >= data['subs_min']) and (user.subs <= data['subs_max']):
+                num += 1
                 text = message.text if message.text else message.caption
                 chat_id = user.tg_id
 
@@ -153,7 +219,7 @@ async def push(message: Message, state: FSMContext):
 
                 elif message.photo is not None:
                     await bot.send_photo(chat_id=chat_id, photo=message.photo[-1].file_id,
-                                        caption=text)
+                                        caption=text, parse_mode='html')
 
-        await message.answer('Готово')
+        await message.answer(f'Готово \nРассылка доставлена {num} из {len(users)} пользователей')
         await state.finish()
