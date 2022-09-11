@@ -1,6 +1,16 @@
 from django.db import models
 
 
+class Tema(models.Model):
+    name = models.CharField(max_length=150)
+
+    def __str__(self) -> str:
+        return self.name
+
+    class Meta:
+        verbose_name = 'Тематика'
+        verbose_name_plural = 'Тематика'
+
 class User(models.Model):
     # Анкета из тг
     name = models.CharField(max_length=100, unique=False)
@@ -12,6 +22,15 @@ class User(models.Model):
     kids = models.BooleanField(null=True)
     animals = models.BooleanField(null=True)
     tematika = models.TextField(null=True, unique=False)
+    # tema = models.ForeignKey(to=Tema, on_delete=models.SET_NULL, null=True, verbose_name='Тематика(выбор)')
+    tema = models.ManyToManyField(to=Tema, verbose_name='Тематика(выбор)', db_table='panel_user_panel_tema_through')
+    sex = models.CharField(max_length=10,
+        choices=(
+        ('m', 'Муж'),
+        ('w', 'Жен')
+    ), 
+    null=True, blank=True, 
+    verbose_name='Пол')
 
     # Системные переменные
     tg_id = models.CharField(max_length=50)
