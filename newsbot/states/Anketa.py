@@ -7,3 +7,4 @@ class Anketa(StatesGroup):
     link = State()
     city = State()
     subs = State()
+    phone = State()

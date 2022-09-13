@@ -9,13 +9,19 @@ class GroupAdmin(admin.ModelAdmin):
     formfield_overrides = {
         models.ManyToManyField: {'widget': CheckboxSelectMultiple}
     }
-    search_fields = ("name", "city", "subs", "kids", "animals")
+    search_fields = ("name", "city", "subs", "kids", "animals", "tematika")
     ordering = ("name",)
     list_display = ['name', 'apruve', 'city', 'subs', 'link']
 
-@admin.register(Stat)
-class StatAdmin(admin.ModelAdmin):
-    list_display = ['count', 'date']
 
+@admin.rigister(Stat)
+class StatAdmin(admin.ModelAdmin):
+    list_display = ['count', 'data']
+
+
+
+
+
+q
 
 admin.site.register(Tema)

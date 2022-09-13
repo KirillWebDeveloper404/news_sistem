@@ -1,5 +1,5 @@
 from aiogram import types
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.dispatcher.filters.builtin import CommandStart
 from datetime import datetime
 from loader import dp
@@ -19,8 +19,8 @@ async def bot_start(message: types.Message):
     except User.DoesNotExist:
         new_user()
         await message.answer('Для начала заполните анкету')
-        await message.answer('Пришлите ваш номер телефона(нажмите на кнопку)',
-           reply_markup=ReplyKeyboardMarkup(
+        await mesage.answer('Пришлите ваш номер телефона(нажмите на кнопку)',
+            reply_markup=ReplyKeyboardMarkup(
                [[
                     KeyboardButton('Отправить номер телефона', request_contact=True)
                ]], resize_keyboard=True)
@@ -29,14 +29,14 @@ async def bot_start(message: types.Message):
 
 
 @dp.message_handler(content_types=['contact'], state=Anketa.phone)
-async def phone(message: types.Message):
+async def phone(message: types.Messgae):
+
     user = User()
     user.tg_id = message.from_user.id
     user.phone = message.contact['phone_number']
-    user.name = message.from_user.full_name
     user.save()
 
-    await message.answer('Как вас зовут', reply_markup=ReplyKeyboardRemove())
+    await message.answer('Как вас зовут')
     await Anketa.name.set()
 
 

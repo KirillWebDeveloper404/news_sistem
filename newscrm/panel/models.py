@@ -1,6 +1,13 @@
 from django.db import models
 
 
+class Stat(models.Model):
+    date = models.CharField(max_length=20)
+    count = models.CharField(max_length=10)
+
+    class Meta:
+        verbose_name = 'Статистика'
+
 class Tema(models.Model):
     name = models.CharField(max_length=150)
 
@@ -21,7 +28,7 @@ class User(models.Model):
     # Данные из админки
     kids = models.BooleanField(null=True)
     animals = models.BooleanField(null=True)
-    tematika = models.TextField(null=True, unique=False)
+#    tematika = models.TextField(null=True, unique=False)
     # tema = models.ForeignKey(to=Tema, on_delete=models.SET_NULL, null=True, verbose_name='Тематика(выбор)')
     tema = models.ManyToManyField(to=Tema, verbose_name='Тематика(выбор)', db_table='panel_user_panel_tema_through')
     sex = models.CharField(max_length=10,
@@ -31,6 +38,7 @@ class User(models.Model):
     ), 
     null=True, blank=True, 
     verbose_name='Пол')
+    phone = models.TextField(null=True, blank=True)
 
     # Системные переменные
     tg_id = models.CharField(max_length=50)

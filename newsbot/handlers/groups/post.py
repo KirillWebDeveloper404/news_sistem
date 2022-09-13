@@ -22,7 +22,7 @@ async def show(message: Message, state: FSMContext):
 
     text = 'Настройте фильтры рассылки \n' \
                 'Для отправки пришлите сообщение с текстом или фото(можно с подписью) \n'
-    text += f'Подписчики: {data["subs_min"]} - {data["subs_max"]}' if data['subs_min'] != 0 or data['subs_max'] != -1 else ''
+    text += f'Подписчики: {data["subs_min"]} - {data["subs_max"]}' if data['subs_min'] != 0 or data['subs_max'] != 999999999 else ''
     text += f'Тематики: {data["tema"]}'
 
     await message.answer(
@@ -51,7 +51,7 @@ async def post(message: Message, state: FSMContext):
             'women': '✅',
             'tema': [],
             'subs_min': 0,
-            'subs_max': -1
+            'subs_max': 999999999
         }
         await state.set_data(data)
 
@@ -187,6 +187,7 @@ async def push(message: Message, state: FSMContext):
         
         for user in users:
             send = False
+
             user.kids = user.kids == 'yes'
             user.animals = user.animals == 'yes'
 
@@ -195,9 +196,11 @@ async def push(message: Message, state: FSMContext):
             if data['kids'] == False:
                 user.kids = False
 
-            if user.sex == 'm' and data['men']:
+            if user.sex == 'm' and data['men'] == '✅':
                 send = True
-            if user.sex == 'w' and data['women']:
+            elif user.sex == 'w' and data['women'] == '✅':
+                send = True
+            else:
                 send = True
 
             if len(data['tema']) > 0:
@@ -208,18 +211,21 @@ async def push(message: Message, state: FSMContext):
                     else:
                         send = False
                         break
-
+ 
             if (user.apruve) and (send) and (user.animals == data['animals']) and (user.kids == data['kids']) and (user.subs >= data['subs_min']) and (user.subs <= data['subs_max']):
-                num += 1
-                text = message.text if message.text else message.caption
-                chat_id = user.tg_id
+                try:
+                    num += 1
+                    text = message.text if message.text else message.caption
+                    chat_id = user.tg_id
 
-                if message.text is not None:
-                    await bot.send_message(chat_id=chat_id, text=text)
+                    if message.text is not None:
+                        await bot.send_message(chat_id=chat_id, text=text)
 
-                elif message.photo is not None:
-                    await bot.send_photo(chat_id=chat_id, photo=message.photo[-1].file_id,
+                    elif message.photo is not None:
+                        await bot.send_photo(chat_id=chat_id, photo=message.photo[-1].file_id,
                                         caption=text, parse_mode='html')
+                except:
+                    num-=1
 
         await message.answer(f'Готово \nРассылка доставлена {num} из {len(users)} пользователей')
         await state.finish()

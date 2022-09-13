@@ -9,8 +9,7 @@ from states import Anketa
 
 @dp.message_handler(state=Anketa.name)
 async def name(message: Message, state: FSMContext):
-    user = User()
-    user.tg_id = message.from_user.id
+    user = User.get(User.tg_id == message.from_user.id)
     user.name = message.text
     user.save()
 
